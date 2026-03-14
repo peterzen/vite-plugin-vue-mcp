@@ -65,13 +65,25 @@ export function VueMcp(options: VueMcpOptions = {}): Plugin {
       const sseUrl = `http://${options.host || 'localhost'}:${port}${mcpPath}/sse`
 
       if (cursorMcpOptions.enabled) {
-        if (existsSync(join(root, '.cursor'))) {
-          const mcp = existsSync(join(root, '.cursor/mcp.json'))
-            ? JSON.parse(await fs.readFile(join(root, '.cursor/mcp.json'), 'utf-8') || '{}')
-            : {}
-          mcp.mcpServers ||= {}
-          mcp.mcpServers[cursorMcpOptions.serverName || 'vue-mcp'] = { url: sseUrl }
-          await fs.writeFile(join(root, '.cursor/mcp.json'), `${JSON.stringify(mcp, null, 2)}\n`)
+        try {
+          if (existsSync(join(root, '.cursor'))) {
+            const mcpConfigPath = join(root, '.cursor/mcp.json')
+            let mcp = {}
+            if (existsSync(mcpConfigPath)) {
+              const raw = await fs.readFile(mcpConfigPath, 'utf-8')
+              mcp = JSON.parse(raw || '{}')
+            }
+            // @ts-expect-error dynamic
+            mcp.mcpServers ||= {}
+            // @ts-expect-error dynamic
+            mcp.mcpServers[cursorMcpOptions.serverName || 'vue-mcp'] = { url: sseUrl }
+            await fs.writeFile(mcpConfigPath, `${JSON.stringify(mcp, null, 2)}\n`)
+            // eslint-disable-next-line no-console
+            console.log(`[vue-mcp] Updated ${mcpConfigPath}`)
+          }
+        }
+        catch (e) {
+          console.error('[vue-mcp] Failed to update .cursor/mcp.json:', e)
         }
       }
 
