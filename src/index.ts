@@ -1,3 +1,4 @@
+import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import type { Plugin, ResolvedConfig, ViteDevServer } from 'vite'
 import type { RpcFunctions, VueMcpContext, VueMcpOptions } from './types'
 import { existsSync } from 'node:fs'
@@ -55,9 +56,12 @@ export function VueMcp(options: VueMcpOptions = {}): Plugin {
       ctx.rpcServer = rpcServer
       ctx.rpc = rpc
 
-      let mcp = await mcpServer(vite, ctx)
-      mcp = await options.mcpServerSetup?.(mcp, vite) || mcp
-      await setupRoutes(mcpPath, mcp, vite)
+      const createMcpServer = async (): Promise<McpServer> => {
+        let mcp = await mcpServer(vite, ctx)
+        mcp = await options.mcpServerSetup?.(mcp, vite) || mcp
+        return mcp
+      }
+      await setupRoutes(mcpPath, createMcpServer, vite)
 
       const port = vite.config.server.port || 5173
       const root = searchForWorkspaceRoot(vite.config.root)

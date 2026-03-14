@@ -5,17 +5,25 @@ import { SSEServerTransport } from '@modelcontextprotocol/sdk/server/sse.js'
 // eslint-disable-next-line no-console
 const log = (...args: any[]): void => console.log(...args)
 
-export async function setupRoutes(base: string, server: McpServer, vite: ViteDevServer): Promise<void> {
+export async function setupRoutes(
+  base: string,
+  createServer: () => Promise<McpServer>,
+  vite: ViteDevServer,
+): Promise<void> {
   const transports = new Map<string, SSEServerTransport>()
 
   vite.middlewares.use(`${base}/sse`, async (req, res) => {
     try {
       const transport = new SSEServerTransport(`${base}/messages`, res)
+      const server = await createServer()
       transports.set(transport.sessionId, transport)
       log(`[vue-mcp] SSE client connected: ${transport.sessionId}`)
       res.on('close', () => {
         log(`[vue-mcp] SSE client disconnected: ${transport.sessionId}`)
         transports.delete(transport.sessionId)
+        server.close().catch((e: unknown) => {
+          console.error('[vue-mcp] Error closing MCP server:', e)
+        })
       })
       await server.connect(transport)
     }
