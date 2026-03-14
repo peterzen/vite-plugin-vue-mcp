@@ -37,6 +37,7 @@
   ],
   "scripts": {
     "build": "unbuild",
+    "prepare": "unbuild",
     "dev": "unbuild --stub",
     "play": "nr -C playground dev",
     "prepublishOnly": "nr build",
